@@ -1,0 +1,1666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cash Crop — The Ledger Companion</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* --- CSS DESIGN SYSTEM & RESET --- */
+    :root {
+      --color-ink: #2B2118;
+      --color-paper: #F6F2E7;
+      --color-gold: #B8862E;
+      --color-gold-alpha: rgba(184, 134, 46, 0.15);
+      --color-green: #47603D;
+      --color-green-alpha: rgba(71, 96, 61, 0.12);
+      --color-red: #9A3226;
+      --color-red-alpha: rgba(154, 50, 38, 0.12);
+      --color-rule: #D9CFB8;
+      --font-serif: 'Fraunces', Georgia, serif;
+      --font-sans: 'IBM Plex Sans', sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+      --ease-out: cubic-bezier(0.25, 1, 0.5, 1);
+      --anim-speed: 0.3s;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      :root {
+        --anim-speed: 0s !important;
+      }
+      .scroll-reveal {
+        transform: none !important;
+        opacity: 1 !important;
+        transition: none !important;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--color-paper);
+      color: var(--color-ink);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      overflow-x: hidden;
+      cursor: none; /* Hide default cursor for custom crosshair */
+    }
+
+    a, button, select, input, label, textarea {
+      cursor: none; /* Enforce custom cursor on interactives */
+    }
+
+    /* --- CUSTOM CANVAS CROSSHAIR --- */
+    #crosshair-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* --- LEDGER PATTERN & TYPOGRAPHY --- */
+    .ledger-bg {
+      background-image: linear-gradient(var(--color-rule) 1px, transparent 1px);
+      background-size: 100% 28px;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: var(--font-serif);
+      font-weight: 600;
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+    }
+
+    /* --- PASSBOOK NAVIGATION TABS --- */
+    header {
+      background-color: var(--color-paper);
+      border-bottom: 2px solid var(--color-ink);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 1rem 1rem 0 1rem;
+    }
+
+    .logo-area {
+      padding-bottom: 0.5rem;
+    }
+
+    .logo-text {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--color-ink);
+      text-decoration: none;
+    }
+
+    .tagline {
+      font-size: 0.8rem;
+      font-family: var(--font-serif);
+      font-style: italic;
+      color: var(--color-gold);
+    }
+
+    nav {
+      display: flex;
+      gap: 4px;
+    }
+
+    .nav-tab {
+      background: var(--color-rule);
+      color: var(--color-ink);
+      text-decoration: none;
+      padding: 0.6rem 1.2rem;
+      font-weight: 500;
+      font-size: 0.95rem;
+      border: 1px solid var(--color-ink);
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      transition: background-color var(--anim-speed) var(--ease-out), transform var(--anim-speed) var(--ease-out);
+      transform: translateY(2px);
+    }
+
+    .nav-tab:hover, .nav-tab:focus {
+      background: var(--color-paper);
+      transform: translateY(0);
+      outline: none;
+    }
+
+    .nav-tab.active {
+      background: var(--color-paper);
+      border-bottom: 2px solid var(--color-paper);
+      transform: translateY(0);
+      font-weight: 600;
+      z-index: 2;
+    }
+
+    /* --- ACCESSIBLE FOCUS STATES --- */
+    *:focus-visible {
+      outline: 2px dashed var(--color-gold);
+      outline-offset: 4px;
+    }
+
+    /* --- LAYOUT & SECTIONS --- */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+
+    .section-panel {
+      display: none;
+    }
+
+    .section-panel.active {
+      display: block;
+    }
+
+    .scroll-reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: transform 0.6s var(--ease-out), opacity 0.6s var(--ease-out);
+    }
+
+    .scroll-reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* --- HERO AREA --- */
+    .hero {
+      position: relative;
+      padding: 4rem 2rem;
+      border: 1px solid var(--color-ink);
+      margin-bottom: 3rem;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .hero-content {
+      max-width: 750px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero h1 {
+      font-size: 2.75rem;
+      line-height: 1.2;
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .hero p {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+      max-width: 600px;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    /* --- BUTTONS --- */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.8rem 1.8rem;
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: 4px;
+      border: 2px solid var(--color-ink);
+      transition: transform var(--anim-speed) var(--ease-out), box-shadow var(--anim-speed) var(--ease-out);
+      background: var(--color-paper);
+      color: var(--color-ink);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(43, 33, 24, 0.15);
+    }
+
+    .btn-primary {
+      background: var(--color-ink);
+      color: var(--color-paper);
+    }
+
+    .btn-secondary {
+      background: transparent;
+    }
+
+    /* --- INK STAMP BADGE --- */
+    .ink-stamp {
+      position: absolute;
+      right: 10%;
+      top: 50%;
+      transform: translateY(-50%) rotate(-12deg) scale(0);
+      width: 140px;
+      height: 140px;
+      border: 4px double var(--color-red);
+      border-radius: 50%;
+      color: var(--color-red);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-weight: bold;
+      text-align: center;
+      line-height: 1.1;
+      padding: 10px;
+      background: rgba(246, 242, 231, 0.8);
+      mix-blend-mode: multiply;
+      user-select: none;
+      pointer-events: none;
+      transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .ink-stamp span {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .ink-stamp .stamp-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+
+    .ink-stamp.animate-trigger {
+      transform: translateY(-50%) rotate(-12deg) scale(1);
+    }
+
+    .ink-stamp.pulse {
+      animation: stamp-press 0.25s var(--ease-out);
+    }
+
+    @keyframes stamp-press {
+      0% { transform: translateY(-50%) rotate(-12deg) scale(1); }
+      50% { transform: translateY(-50%) rotate(-15deg) scale(0.85); opacity: 0.8; }
+      100% { transform: translateY(-50%) rotate(-12deg) scale(1); }
+    }
+
+    /* --- CALCULATOR & TWO-COLUMN INTERFACE --- */
+    .calculator-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    @media (max-width: 850px) {
+      .calculator-layout {
+        grid-template-columns: 1fr;
+      }
+      .ink-stamp {
+        position: relative;
+        right: auto;
+        top: auto;
+        transform: rotate(-5deg) scale(1);
+        margin: 1.5rem auto 0;
+      }
+      .ink-stamp.animate-trigger {
+        transform: rotate(-5deg) scale(1);
+      }
+    }
+
+    .ledger-card {
+      border: 1px solid var(--color-ink);
+      border-radius: 4px;
+      padding: 2rem;
+      background: #FAF7F0;
+      position: relative;
+      box-shadow: 2px 2px 0px var(--color-ink);
+    }
+
+    .card-title {
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px dashed var(--color-ink);
+      padding-bottom: 0.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      font-size: 0.95rem;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-prefix {
+      position: absolute;
+      left: 12px;
+      font-family: var(--font-mono);
+      color: var(--color-ink);
+      opacity: 0.7;
+    }
+
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 0.7rem 0.7rem 0.7rem 28px;
+      border: 1px solid var(--color-ink);
+      background: var(--color-paper);
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      border-radius: 4px;
+      color: var(--color-ink);
+    }
+
+    .form-group select {
+      padding-left: 12px;
+    }
+
+    .toggle-container {
+      display: flex;
+      border: 1px solid var(--color-ink);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+
+    .toggle-btn {
+      flex: 1;
+      border: none;
+      padding: 0.6rem;
+      background: var(--color-paper);
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: background-color var(--anim-speed) var(--ease-out);
+    }
+
+    .toggle-btn.active {
+      background: var(--color-ink);
+      color: var(--color-paper);
+    }
+
+    /* Calculator Outputs */
+    .outputs-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .output-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--color-rule);
+    }
+
+    .output-label {
+      font-weight: 500;
+    }
+
+    .output-value {
+      font-family: var(--font-mono);
+      font-size: 1.3rem;
+      font-weight: 600;
+    }
+
+    .output-row.total-payable {
+      border-bottom: 2px double var(--color-ink);
+      padding-bottom: 0.8rem;
+    }
+
+    .output-row.total-payable .output-value {
+      font-size: 1.6rem;
+      color: var(--color-red);
+    }
+
+    /* --- DATA TABLES --- */
+    .table-container {
+      overflow-x: auto;
+      margin-top: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th {
+      background-color: var(--color-ink);
+      color: var(--color-paper);
+      padding: 0.75rem 1rem;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--color-rule);
+      font-size: 0.95rem;
+      transition: background-color 0.4s var(--ease-out);
+    }
+
+    tr.highlight-cheapest td {
+      background-color: var(--color-green-alpha);
+    }
+    
+    tr.highlight-expensive td {
+      background-color: var(--color-red-alpha);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      border-radius: 3px;
+      font-family: var(--font-sans);
+    }
+
+    .badge-green {
+      background-color: var(--color-green);
+      color: var(--color-paper);
+    }
+
+    .badge-red {
+      background-color: var(--color-red);
+      color: var(--color-paper);
+    }
+
+    /* --- LEARN MODULE GRID --- */
+    .grid-layout {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 2rem;
+      margin-top: 1.5rem;
+    }
+
+    .lesson-card {
+      border: 1px solid var(--color-ink);
+      border-radius: 4px;
+      background: #FAF7F0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 2px 2px 0px var(--color-ink);
+      transition: transform var(--anim-speed) var(--ease-out), box-shadow var(--anim-speed) var(--ease-out);
+    }
+
+    .lesson-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 4px 4px 12px rgba(43, 33, 24, 0.12);
+    }
+
+    .video-placeholder {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: var(--color-ink);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .video-placeholder::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 100% 8px;
+    }
+
+    .play-btn {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: var(--color-paper);
+      border: 2px solid var(--color-ink);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+      transition: transform var(--anim-speed) var(--ease-out), background-color var(--anim-speed) var(--ease-out);
+    }
+
+    .play-btn::after {
+      content: '';
+      width: 0;
+      height: 0;
+      border-top: 8px solid transparent;
+      border-bottom: 8px solid transparent;
+      border-left: 14px solid var(--color-ink);
+      margin-left: 4px;
+    }
+
+    .lesson-card:hover .play-btn {
+      transform: scale(1.15);
+      background: var(--color-gold);
+    }
+
+    .lesson-body {
+      padding: 1.25rem;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .lesson-body h3 {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .lesson-body p {
+      font-size: 0.9rem;
+      color: #554435;
+      margin-bottom: 1.25rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .lesson-link {
+      margin-top: auto;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--color-gold);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .lesson-link:hover {
+      text-decoration: underline;
+    }
+
+    /* --- BUDGETING SYSTEM --- */
+    .budget-grid {
+      display: grid;
+      grid-template-columns: 350px 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 850px) {
+      .budget-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .bar-comparison-track {
+      width: 100%;
+      height: 12px;
+      background: var(--color-rule);
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .bar-fill-estimated {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      background: var(--color-gold);
+      opacity: 0.4;
+      z-index: 1;
+    }
+
+    .bar-fill-actual {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      background: var(--color-green);
+      z-index: 2;
+      border-radius: 6px 0 0 6px;
+    }
+
+    .bar-fill-actual.over-budget {
+      background: var(--color-red);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #776655;
+      font-style: italic;
+    }
+
+    .btn-delete {
+      background: transparent;
+      border: none;
+      color: var(--color-red);
+      font-family: var(--font-mono);
+      font-weight: bold;
+      padding: 0.2rem 0.5rem;
+    }
+
+    .btn-delete:hover {
+      text-decoration: underline;
+    }
+
+    /* --- FUNDRAISER --- */
+    .fundraiser-container {
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .progress-box {
+      background: #FAF7F0;
+      border: 1px solid var(--color-ink);
+      padding: 2rem;
+      border-radius: 4px;
+      margin: 2rem 0;
+    }
+
+    .progress-bar-outer {
+      width: 100%;
+      height: 24px;
+      background: var(--color-rule);
+      border: 1px solid var(--color-ink);
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 1rem 0;
+    }
+
+    .progress-bar-inner {
+      height: 100%;
+      width: 0%;
+      background: var(--color-green);
+      transition: width 1.2s cubic-bezier(0.1, 0.8, 0.2, 1);
+    }
+
+    .tier-layout {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    @media (max-width: 750px) {
+      .tier-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .tier-card {
+      border: 1px dashed var(--color-ink);
+      padding: 1.5rem;
+      background: #FAF7F0;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .tier-price {
+      font-family: var(--font-mono);
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--color-gold);
+      margin: 0.5rem 0;
+    }
+
+    /* --- ACCORDION & HELP --- */
+    .faq-layout {
+      max-width: 800px;
+      margin: 0 auto 3rem;
+    }
+
+    .accordion-item {
+      border-bottom: 1px solid var(--color-ink);
+    }
+
+    .accordion-trigger {
+      width: 100%;
+      background: none;
+      border: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 0;
+      font-family: var(--font-serif);
+      font-size: 1.2rem;
+      font-weight: 600;
+      text-align: left;
+      color: var(--color-ink);
+    }
+
+    .accordion-icon {
+      font-family: var(--font-mono);
+      font-size: 1.4rem;
+      font-weight: 400;
+      transition: transform var(--anim-speed) var(--ease-out);
+      display: inline-block;
+    }
+
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height var(--anim-speed) var(--ease-out);
+    }
+
+    .accordion-content p {
+      padding-bottom: 1.25rem;
+      font-size: 0.95rem;
+      color: #443325;
+    }
+
+    .accordion-item.open .accordion-icon {
+      transform: rotate(45deg);
+    }
+
+    .contact-form-box {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* --- FOOTER --- */
+    footer {
+      border-top: 1px solid var(--color-ink);
+      background-color: #ECE7DC;
+      padding: 2.5rem 1rem;
+      margin-top: 5rem;
+      font-size: 0.85rem;
+      text-align: center;
+      color: #554435;
+    }
+
+    .footer-content {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .disclaimer {
+      border: 1px dashed var(--color-red);
+      padding: 1rem;
+      border-radius: 4px;
+      background: rgba(154, 50, 38, 0.03);
+      margin-top: 1.5rem;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Custom Crosshair Canvas Layer -->
+  <canvas id="crosshair-canvas"></canvas>
+
+  <!-- Passbook Header Frame -->
+  <header>
+    <div class="nav-container">
+      <div class="logo-area">
+        <a href="#home" class="logo-text" onclick="switchTab('home')">Cash Crop</a>
+        <div class="tagline">yield & credit manager</div>
+      </div>
+      <nav role="tablist">
+        <a href="#home" id="tab-home" class="nav-tab active" role="tab" onclick="switchTab('home')">Passbook</a>
+        <a href="#learn" id="tab-learn" class="nav-tab" role="tab" onclick="switchTab('learn')">Lessons</a>
+        <a href="#budget" id="tab-budget" class="nav-tab" role="tab" onclick="switchTab('budget')">Daily Ledger</a>
+        <a href="#fund" id="tab-fund" class="nav-tab" role="tab" onclick="switchTab('fund')">Support Us</a>
+        <a href="#help" id="tab-help" class="nav-tab" role="tab" onclick="switchTab('help')">Help desk</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    
+    <!-- ================= HOME PANEL ================= -->
+    <div id="panel-home" class="section-panel active">
+      <section class="hero ledger-bg">
+        <div class="hero-content">
+          <h1 id="hero-headline">Every loan has two prices — the one they tell you, and the one you actually pay.</h1>
+          <p id="hero-subtext">Don't sign your future away for a quick season fix. Compute hidden asset drains, track diminishing balance math, and isolate trusted partners instantly.</p>
+          <div class="hero-ctas" id="hero-actions">
+            <a href="#calculator-target" class="btn btn-primary" onclick="document.getElementById('calculator-target').scrollIntoView({behavior: 'smooth'})">Calculate Real Cost</a>
+            <a href="#lenders-target" class="btn btn-secondary" onclick="document.getElementById('lenders-target').scrollIntoView({behavior: 'smooth'})">Compare Lenders</a>
+          </div>
+        </div>
+        <div class="ink-stamp" id="hero-stamp">
+          <span>Real Cost</span>
+          <div class="stamp-value" id="stamp-pct">+0%</div>
+          <span>Verified</span>
+        </div>
+      </section>
+
+      <!-- Calculator & Metrics Outputs Layout -->
+      <div class="calculator-layout" id="calculator-target">
+        
+        <!-- Input Ledger Card -->
+        <div class="ledger-card scroll-reveal">
+          <h2 class="card-title">1. Debt Parameters</h2>
+          
+          <div class="form-group">
+            <label for="calc-amount">Principal Requested</label>
+            <div class="input-wrapper">
+              <span class="input-prefix">₹</span>
+              <input type="number" id="calc-amount" value="50000" min="1000" step="500">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="calc-rate">Stated Annual Interest Rate</label>
+            <div class="input-wrapper">
+              <span class="input-prefix">%</span>
+              <input type="number" id="calc-rate" value="14" min="1" max="200" step="0.5">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="calc-tenure">Repayment Horizon</label>
+            <div class="input-wrapper">
+              <span class="input-prefix">M</span>
+              <input type="number" id="calc-tenure" value="12" min="1" max="120">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Interest Computation Method</label>
+            <div class="toggle-container">
+              <button class="toggle-btn active" id="type-reducing" onclick="setCalcMethod('reducing')">Reducing Balance</button>
+              <button class="toggle-btn" id="type-flat" onclick="setCalcMethod('flat')">Flat Rate</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Output Ledger Card -->
+        <div class="ledger-card scroll-reveal">
+          <h2 class="card-title">2. True Outflow Breakdown</h2>
+          
+          <div class="outputs-list">
+            <div class="output-row">
+              <span class="output-label">Scheduled Periodical Outflow</span>
+              <span class="output-value" id="out-emi">₹0</span>
+            </div>
+            <div class="output-row">
+              <span class="output-label">Aggregate Interest Absolute</span>
+              <span class="output-value" id="out-interest">₹0</span>
+            </div>
+            <div class="output-row total-payable">
+              <span class="output-label">Total Out-of-Pocket Balance</span>
+              <span class="output-value" id="out-total">₹0</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 1.5rem; font-size: 0.9rem; font-style: italic; color:#554435;">
+            * A flat balance approach extracts interest on already repaid value. Verify amortization modes closely before applying physical marks.
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Comparison Ledger Frame -->
+      <section class="ledger-card scroll-reveal" id="lenders-target" style="margin-bottom:3rem;">
+        <h2 class="card-title">Market Assessment Table</h2>
+        <p style="margin-bottom: 1rem; font-size:0.95rem;">Simulated total payout architecture based on the financial constraints loaded within the ledger modules above:</p>
+        
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Lending Category Architecture</th>
+                <th>Standard Rate Index</th>
+                <th>Projected Periodical Bill</th>
+                <th>Gross Cumulative Repayment</th>
+                <th>System Status Flag</th>
+              </tr>
+            </thead>
+            <tbody id="comparison-table-body">
+              <!-- Dynamically Generated Matrix Rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- ================= LEARN PANEL ================= -->
+    <div id="panel-learn" class="section-panel">
+      <h2 class="card-title" style="font-size: 2rem;">Rural Financial Literacy Archive</h2>
+      <p>A library designed specifically to expose hidden debt machinery, prioritize savings, and establish baseline security indicators.</p>
+      
+      <div class="grid-layout">
+        <!-- 6 Lesson Blocks -->
+        <div class="lesson-card scroll-reveal">
+          <div class="video-placeholder"><button class="play-btn" aria-label="Play video instruction"></button></div>
+          <div class="lesson-body">
+            <h3>Breaking the Poverty Cycle</h3>
+            <p>How loans assumed during emergency periods morph into generational anchors, and where the sequence can be disrupted.</p>
+            <a href="#" class="lesson-link">Watch lesson &rarr;</a>
+          </div>
+        </div>
+
+        <div class="lesson-card scroll-reveal">
+          <div class="video-placeholder"><button class="play-btn" aria-label="Play video instruction"></button></div>
+          <div class="lesson-body">
+            <h3>Saving & Capital Allocation</h3>
+            <p>Techniques for partitioning seasonal revenues out of normal collection loops to construct structural cash padding.</p>
+            <a href="#" class="lesson-link">Watch lesson &rarr;</a>
+          </div>
+        </div>
+
+        <div class="lesson-card scroll-reveal">
+          <div class="video-placeholder"><button class="play-btn" aria-label="Play video instruction"></button></div>
+          <div class="lesson-body">
+            <h3>Dissecting Compounding Layouts</h3>
+            <p>The core mathematical variance between basic flat terms and the systemic reality of diminishing credit calculation frames.</p>
+            <a href="#" class="lesson-link">Watch lesson &rarr;</a>
+          </div>
+        </div>
+
+        <div class="lesson-card scroll-reveal">
+          <div class="video-placeholder"><button class="play-btn" aria-label="Play video instruction"></button></div>
+          <div class="lesson-body">
+            <h3>Sovereign Assistance Programs</h3>
+            <p>A look at state subsidies, low-interest agricultural lines, and protective legal relief measures available to small farms.</p>
+            <a href="#" class="lesson-link">Watch lesson &rarr;</a>
+          </div>
+        </div>
+
+        <div class="lesson-card scroll-reveal">
+          <div class="video-placeholder"><button class="play-btn" aria-label="Play video instruction"></button></div>
+          <div class="lesson-body">
+            <h3>Diversified Farm Safety Nets</h3>
+            <p>Spreading single-source crop dependencies into allied operational micro-sectors to spread systemic climate risks.</p>
+            <a href="#" class="lesson-link">Watch lesson &rarr;</a>
+          </div>
+        </div>
+
+        <div class="lesson-card scroll-reveal">
+          <div class="video-placeholder"><button class="play-btn" aria-label="Play video instruction"></button></div>
+          <div class="lesson-body">
+            <h3>Is Debt Universally Malicious?</h3>
+            <p>Differentiating productive credit designed for asset expansion from survival liabilities that strip baseline equity clean.</p>
+            <a href="#" class="lesson-link">Watch lesson &rarr;</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= BUDGET PANEL ================= -->
+    <div id="panel-budget" class="section-panel">
+      <h2 class="card-title" style="font-size: 2rem;">The Daily Operational Ledger</h2>
+      <p style="margin-bottom: 2rem;">Map your seasonal operational spending to prevent mid-cycle dependency on local private lenders.</p>
+      
+      <div class="budget-grid">
+        <!-- Entry System Frame -->
+        <div class="ledger-card">
+          <h3 style="font-size:1.25rem; margin-bottom:1rem; border-bottom:1px solid var(--color-ink);">Post Line Entry</h3>
+          <form id="budget-form" onsubmit="addBudgetLine(event)">
+            <div class="form-group">
+              <label for="b-category">Allocation Metric</label>
+              <input type="text" id="b-category" placeholder="e.g. Nitrogenous Fertilizers, Field Labor" required style="padding-left:12px;">
+            </div>
+            <div class="form-group">
+              <label for="b-est">Projected Limit Cost</label>
+              <div class="input-wrapper">
+                <span class="input-prefix">₹</span>
+                <input type="number" id="b-est" min="1" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="b-act">Actual Local Cash Outflow</label>
+              <div class="input-wrapper">
+                <span class="input-prefix">₹</span>
+                <input type="number" id="b-act" min="1" required>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%; margin-top:0.5rem;">Commit Line to Ledger</button>
+          </form>
+        </div>
+
+        <!-- Ledger Balancing Ledger Sheet View -->
+        <div class="ledger-card">
+          <h3 style="font-size:1.25rem; margin-bottom:1rem; border-bottom:1px solid var(--color-ink);">Balanced Record Statement</h3>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Allocation Metric</th>
+                  <th>Projected Limit</th>
+                  <th>Actual Outflow</th>
+                  <th>Delta Variance Scale</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="budget-table-body">
+                <!-- Programmatically populated matrix inputs -->
+              </tbody>
+              <tfoot>
+                <tr style="font-weight: 700; background: var(--color-rule);">
+                  <td>Aggregated Balance</td>
+                  <td id="total-est" class="mono">₹0</td>
+                  <td id="total-act" class="mono">₹0</td>
+                  <td id="total-diff" class="mono">₹0</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+            <div id="budget-empty" class="empty-state">No transaction logs recorded in current session. Populate values to calculate micro-variance.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= FUNDRAISER PANEL ================= -->
+    <div id="panel-fund" class="section-panel">
+      <div class="fundraiser-container">
+        <h2 style="font-size: 2.25rem; margin-bottom: 0.5rem;">Sustain Independent Financial Guidance</h2>
+        <p>We accept absolutely zero funding or corporate placement revenue from banks, financial institutions, or private credit entities. Help us host debt-counseling sessions and physical passbook clinics directly inside regional community spaces.</p>
+        
+        <div class="progress-box scroll-reveal">
+          <div style="display:flex; justify-content:space-between; font-family:var(--font-mono); font-weight:600;">
+            <span>AGGREGATED POOL: ₹1,42,500</span>
+            <span>CAP TARGET: ₹3,000,000</span>
+          </div>
+          <div class="progress-bar-outer">
+            <div id="fund-progress" class="progress-bar-inner"></div>
+          </div>
+          <div style="text-align:right; font-family:var(--font-mono); font-size:0.9rem; color:var(--color-gold);">
+            Operational Run Completed: <span id="progress-text">47.5</span>%
+          </div>
+        </div>
+
+        <div class="tier-layout">
+          <div class="tier-card scroll-reveal">
+            <h3>Field Clinic</h3>
+            <div class="tier-price">₹500</div>
+            <p style="font-size:0.85rem; margin-bottom:1.5rem; text-align:center;">Funds training guides and passbook log sheets for 10 structural small-scale farmers.</p>
+            <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.85rem; margin-top:auto;" onclick="alert('Thank you for supporting financial literacy education. External payment gateways can be easily connected here.')">Contribute Tier</button>
+          </div>
+          <div class="tier-card scroll-reveal">
+            <h3>Village Workshop</h3>
+            <div class="tier-price">₹2,500</div>
+            <p style="font-size:0.85rem; margin-bottom:1.5rem; text-align:center;">Provides travel resources and equipment for mobile computational experts to service remote centers.</p>
+            <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.85rem; margin-top:auto;" onclick="alert('Thank you for supporting financial literacy education. External payment gateways can be easily connected here.')">Contribute Tier</button>
+          </div>
+          <div class="tier-card scroll-reveal">
+            <h3>Legal Shelter</h3>
+            <div class="tier-price">₹10,000</div>
+            <p style="font-size:0.85rem; margin-bottom:1.5rem; text-align:center;">Supplies expert protective debt arbitration services directly to communities facing predatory extraction.</p>
+            <button class="btn btn-primary" style="padding:0.5rem 1rem; font-size:0.85rem; margin-top:auto;" onclick="alert('Thank you for supporting financial literacy education. External payment gateways can be easily connected here.')">Contribute Tier</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= HELP PANEL ================= -->
+    <div id="panel-help" class="section-panel">
+      <div class="faq-layout">
+        <h2 class="card-title" style="font-size:2rem; text-align:center; margin-bottom:2rem;">Core Advisory Clarifications</h2>
+        
+        <div class="accordion-item">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            <span>Is the mathematical projection absolute?</span>
+            <span class="accordion-icon">+</span>
+          </button>
+          <div class="accordion-content">
+            <p>Yes, the calculations are mathematically precise based on standard financial engineering principles. However, private agreements can hide extra operational fees, dynamic legal changes, or unexpected handling charges. Always check your paperwork for separate processing costs.</p>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            <span>What defines the variance between Flat and Reducing interest?</span>
+            <span class="accordion-icon">+</span>
+          </button>
+          <div class="accordion-content">
+            <p>Flat rate computing applies interest penalties across the entire principal amount for the whole lifecycle, completely ignoring your partial payments. Diminishing calculations evaluate balance solely based on what you actually owe at that exact moment. This step saves you significant long-term capital.</p>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            <span>How are local privacy criteria handled?</span>
+            <span class="accordion-icon">+</span>
+          </button>
+          <div class="accordion-content">
+            <p>All information remains strictly inside your local web browser session. No records are broadcast or stored on external database platforms. Your privacy is protected by design.</p>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            <span>What structural alternatives exist if debt becomes unpayable?</span>
+            <span class="accordion-icon">+</span>
+          </button>
+          <div class="accordion-content">
+            <p>Immediately report predatory practices to regional cooperative bank supervisors or district legal aid services. Do not take out secondary high-interest loans to cover past balances; this triggers dangerous debt traps.</p>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            <span>Information Architecture Disclaimer</span>
+            <span class="accordion-icon">+</span>
+          </button>
+          <div class="accordion-content">
+            <p>This engine acts purely as an educational simulator. Material processed here does not serve as official financial, wealth architecture, or legal advice. Consult certified community legal advisors before executing formal signature obligations.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact System Layout Box -->
+      <div class="ledger-card contact-form-box">
+        <h3 class="card-title">Initiate Secure Help Line</h3>
+        <form onsubmit="event.preventDefault(); alert('Message successfully logged on client side interface frame.'); this.reset();">
+          <div class="form-group">
+            <label>Identification Title / Alias</label>
+            <input type="text" placeholder="e.g. Farmer Suresh Kumar" required style="padding-left:12px;">
+          </div>
+          <div class="form-group">
+            <label>Direct Contact Route (Mobile Numeric or Email)</label>
+            <input type="text" placeholder="e.g. +91 98765 43210" required style="padding-left:12px;">
+          </div>
+          <div class="form-group">
+            <label>Contextual Situation Summary</label>
+            <textarea rows="4" placeholder="Detail any unverified clauses or pressure tactics used by external credit entities..." required style="padding-left:12px; width:100%; border:1px solid var(--color-ink); background:var(--color-paper); font-family:var(--font-sans); border-radius:4px; padding:0.7rem;"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;">Commit Inquiry to Queue</button>
+        </form>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- --- FOOTER DISCLOSURE ELEMENT --- -->
+  <footer>
+    <div class="footer-content">
+      <p class="mono">&copy; 2026 Cash Crop — Sovereign Rural Financial Toolsets. Engineered with absolute corporate independence.</p>
+      <div class="disclaimer">
+        <strong>Mandatory Structural Disclosure Note:</strong> The tools, calculations, and content hosted on Cash Crop are designed exclusively for educational use. They do not constitute official financial counseling or authorized legal advice. Using these calculation matrices does not form a professional advisory relationship. Always verify terms before signing binding financial contracts.
+      </div>
+    </div>
+  </footer>
+
+  <!-- --- APP ARCHITECTURE JAVASCRIPT --- -->
+  <script>
+    // --- STAGE DATA FRAME ARCHITECTURE ---
+    let currentCalcMethod = 'reducing';
+    const LENDER_ARCHITECTURES = [
+      { name: 'Nationalized Banking Institution', rate: 7, block: false },
+      { name: 'Regional Agricultural Rural Bank', rate: 9, block: false },
+      { name: 'District Primary Cooperative Society', rate: 12, block: false },
+      { name: 'Validated Self-Help Group Pool', rate: 15, block: false },
+      { name: 'Commercial Microfinance Intermediary', rate: 21, block: false },
+      { name: 'Local Unregulated Private Moneylender', rate: 48, block: true }
+    ];
+
+    let budgetEntries = [];
+
+    // --- CUSTOM CANVAS DIGITAL TECH CROSSHAIR ---
+    const canvas = document.getElementById('crosshair-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2, active: false };
+    let targetMouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Mouse Activity Tracking Engine
+    window.addEventListener('mousemove', (e) => {
+      targetMouse.x = e.clientX;
+      targetMouse.y = e.clientY;
+      mouse.active = true;
+    });
+
+    window.addEventListener('mouseleave', () => { mouse.active = false; });
+
+    // Emit specialized trace coordinates reminiscent of technological geometric interfaces
+    function createParticle(x, y) {
+      if (particles.length > 40) return; // Cap density loop performance
+      particles.push({
+        x: x,
+        y: y,
+        vx: (Math.random() - 0.5) * 1.5,
+        vy: (Math.random() - 0.5) * 1.5,
+        alpha: 1,
+        size: Math.random() * 2 + 1,
+        color: Math.random() > 0.5 ? '#B8862E' : '#9A3226'
+      });
+    }
+
+    // High performance execution loop for custom crosshair rendering
+    function renderCrosshair() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Smooth tracking interpolation
+      mouse.x += (targetMouse.x - mouse.x) * 0.25;
+      mouse.y += (targetMouse.y - mouse.y) * 0.25;
+
+      if (mouse.active) {
+        const cx = mouse.x;
+        const cy = mouse.y;
+
+        // Custom tech-inspired crosshair framework
+        ctx.strokeStyle = 'rgba(43, 33, 24, 0.6)';
+        ctx.lineWidth = 1;
+
+        // Core Reticle Box Boundary
+        ctx.strokeRect(cx - 6, cy - 6, 12, 12);
+
+        // Precision Axis Elements
+        ctx.beginPath();
+        ctx.moveTo(cx - 18, cy); ctx.lineTo(cx - 8, cy);
+        ctx.moveTo(cx + 8, cy); ctx.lineTo(cx + 18, cy);
+        ctx.moveTo(cx, cy - 18); ctx.lineTo(cx, cy - 8);
+        ctx.moveTo(cx, cy + 8); ctx.lineTo(cx, cy + 18);
+        ctx.stroke();
+
+        // Structural corner frames matching dark tech themes
+        ctx.strokeStyle = '#B8862E';
+        ctx.beginPath();
+        // Top Left Frame
+        ctx.moveTo(cx - 24, cy - 12); ctx.lineTo(cx - 24, cy - 24); ctx.lineTo(cx - 12, cy - 24);
+        // Top Right Frame
+        ctx.moveTo(cx + 24, cy - 12); ctx.lineTo(cx + 24, cy - 24); ctx.lineTo(cx + 12, cy - 24);
+        // Bottom Left Frame
+        ctx.moveTo(cx - 24, cy + 12); ctx.lineTo(cx - 24, cy + 24); ctx.lineTo(cx - 12, cy + 24);
+        // Bottom Right Frame
+        ctx.moveTo(cx + 24, cy + 12); ctx.lineTo(cx + 24, cy + 24); ctx.lineTo(cx + 12, cy + 24);
+        ctx.stroke();
+
+        // Spawn trailing structural points if moving
+        if (Math.abs(targetMouse.x - mouse.x) > 0.2) {
+          createParticle(cx, cy);
+        }
+      }
+
+      // Process and render particle tracers
+      for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= 0.025;
+
+        if (p.alpha <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.alpha;
+        ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+      }
+      ctx.globalAlpha = 1.0;
+
+      requestAnimationFrame(renderCrosshair);
+    }
+    requestAnimationFrame(renderCrosshair);
+
+
+    // --- NAVIGATION CONTROLLER ---
+    function switchTab(targetId) {
+      document.querySelectorAll('.section-panel').forEach(panel => panel.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+      
+      const targetPanel = document.getElementById(`panel-${targetId}`);
+      const targetTab = document.getElementById(`tab-${targetId}`);
+      
+      if(targetPanel && targetTab) {
+        targetPanel.classList.add('active');
+        targetTab.classList.add('active');
+        window.scrollTo({ top: 0 });
+        
+        // Custom processing handlers per view frame
+        if (targetId === 'fund') {
+          setTimeout(triggerFundraiserAnimation, 200);
+        }
+        
+        // Re-evaluate scroll points for newly mapped assets
+        triggerScrollReveal();
+      }
+    }
+
+    // --- FORM COMPUTATION ENGINE (CORE ROUTINES) ---
+    const inputAmount = document.getElementById('calc-amount');
+    const inputRate = document.getElementById('calc-rate');
+    const inputTenure = document.getElementById('calc-tenure');
+
+    function setCalcMethod(method) {
+      currentCalcMethod = method;
+      document.getElementById('type-reducing').classList.toggle('active', method === 'reducing');
+      document.getElementById('type-flat').classList.toggle('active', method === 'flat');
+      processCalculations();
+    }
+
+    // Dynamic state listeners mapping standard form entries
+    [inputAmount, inputRate, inputTenure].forEach(element => {
+      element.addEventListener('input', () => processCalculations());
+    });
+
+    function animateNumberValue(elementId, targetValue, isCurrency = true) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      
+      // Handle instances where animation minimization criteria is active
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        el.innerText = isCurrency ? `₹${Math.round(targetValue).toLocaleString('en-IN')}` : `${targetValue}%`;
+        return;
+      }
+
+      const startValue = parseFloat(el.innerText.replace(/[^0-9.-]/g, '')) || 0;
+      const timelineDuration = 350; 
+      const momentStart = performance.now();
+
+      function updateFrame(now) {
+        const stepProgress = Math.min((now - momentStart) / timelineDuration, 1);
+        const interpolatedValue = startValue + stepProgress * (targetValue - startValue);
+        
+        el.innerText = isCurrency 
+          ? `₹${Math.round(interpolatedValue).toLocaleString('en-IN')}` 
+          : `${interpolatedValue.toFixed(1)}%`;
+
+        if (stepProgress < 1) {
+          requestAnimationFrame(updateFrame);
+        }
+      }
+      requestAnimationFrame(updateFrame);
+    }
+
+    function processCalculations() {
+      const P = parseFloat(inputAmount.value) || 0;
+      const annualR = parseFloat(inputRate.value) || 0;
+      const N = parseInt(inputTenure.value) || 0;
+
+      let emi = 0;
+      let totalRepay = 0;
+      let totalInterest = 0;
+
+      if (P > 0 && annualR > 0 && N > 0) {
+        if (currentCalcMethod === 'reducing') {
+          const monthlyR = (annualR / 12) / 100;
+          emi = P * monthlyR * Math.pow(1 + monthlyR, N) / (Math.pow(1 + monthlyR, N) - 1);
+          totalRepay = emi * N;
+          totalInterest = totalRepay - P;
+        } else {
+          // Flat rate structural execution model
+          totalInterest = P * (annualR / 100) * (N / 12);
+          totalRepay = P + totalInterest;
+          emi = totalRepay / N;
+        }
+      }
+
+      // Commit metrics via the live counting animation engine
+      animateNumberValue('out-emi', emi);
+      animateNumberValue('out-interest', totalInterest);
+      animateNumberValue('out-total', totalRepay);
+
+      // Compute and inject variance index stamp metrics
+      const realCostPct = totalRepay > 0 ? ((totalRepay - P) / P) * 100 : 0;
+      animateNumberValue('stamp-pct', realCostPct, false);
+
+      // Activate ink-stamp micro-interaction animation loop
+      const stampElement = document.getElementById('hero-stamp');
+      stampElement.classList.remove('pulse');
+      void stampElement.offsetWidth; // Force hardware state reflow
+      stampElement.classList.add('pulse');
+
+      generateComparisonMatrix(P, N);
+    }
+
+    function generateComparisonMatrix(principal, months) {
+      const tbody = document.getElementById('comparison-table-body');
+      tbody.innerHTML = '';
+
+      if (principal <= 0 || months <= 0) return;
+
+      let absoluteCheapest = Infinity;
+      let absoluteExpensive = -Infinity;
+      let analyticalRows = [];
+
+      // Calculate the absolute spectrum values
+      LENDER_ARCHITECTURES.forEach(lender => {
+        const monthlyR = (lender.rate / 12) / 100;
+        let compEmi = principal * monthlyR * Math.pow(1 + monthlyR, months) / (Math.pow(1 + monthlyR, months) - 1);
+        let compTotal = compEmi * months;
+
+        if (compTotal < absoluteCheapest) absoluteCheapest = compTotal;
+        if (compTotal > absoluteExpensive) absoluteExpensive = compTotal;
+
+        analyticalRows.push({ lender, compEmi, compTotal });
+      });
+
+      // Construct and paint the rows
+      analyticalRows.forEach(item => {
+        const tr = document.createElement('tr');
+        
+        let highlightClass = '';
+        let statusTag = '';
+
+        if (item.compTotal === absoluteCheapest) {
+          highlightClass = 'highlight-cheapest';
+          statusTag = '<span class="badge badge-green">Optimal Risk</span>';
+        } else if (item.lender.block || item.compTotal === absoluteExpensive) {
+          highlightClass = 'highlight-expensive';
+          statusTag = '<span class="badge badge-red">Avoid Trap</span>';
+        } else {
+          statusTag = '<span class="badge" style="background:#ECE7DC;">Standard Line</span>';
+        }
+
+        tr.className = highlightClass;
+        tr.innerHTML = `
+          <td style="font-weight:600;">${item.lender.name}</td>
+          <td class="mono" style="font-weight:500;">${item.lender.rate}.0%</td>
+          <td class="mono">₹${Math.round(item.compEmi).toLocaleString('en-IN')}</td>
+          <td class="mono" style="font-weight:600;">₹${Math.round(item.compTotal).toLocaleString('en-IN')}</td>
+          <td>${statusTag}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // --- TRANSACTIONAL BUDGET SYSTEM CONTROLLER ---
+    function updateBudgetDisplay() {
+      const tbody = document.getElementById('budget-table-body');
+      const emptyState = document.getElementById('budget-empty');
+      tbody.innerHTML = '';
+
+      if(budgetEntries.length === 0) {
+        emptyState.style.display = 'block';
+        document.getElementById('total-est').innerText = '₹0';
+        document.getElementById('total-act').innerText = '₹0';
+        document.getElementById('total-diff').innerText = '₹0';
+        return;
+      }
+      emptyState.style.display = 'none';
+
+      let sumEst = 0, sumAct = 0;
+
+      budgetEntries.forEach((entry, idx) => {
+        sumEst += entry.est;
+        sumAct += entry.act;
+
+        const rowDelta = entry.est - entry.act;
+        const isOver = entry.act > entry.est;
+        const pctFillEst = 100;
+        const pctFillAct = Math.min((entry.act / entry.est) * 100, 100);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-weight:600;">
+            ${escapeHtml(entry.category)}
+            <div class="bar-comparison-track">
+              <div class="bar-fill-estimated" style="width: ${pctFillEst}%"></div>
+              <div class="bar-fill-actual ${isOver ? 'over-budget' : ''}" style="width: ${pctFillAct}%"></div>
+            </div>
+          </td>
+          <td class="mono">₹${entry.est.toLocaleString('en-IN')}</td>
+          <td class="mono">₹${entry.act.toLocaleString('en-IN')}</td>
+          <td class="mono" style="font-weight:600; color: ${rowDelta >= 0 ? 'var(--color-green)' : 'var(--color-red)'}">
+            ${rowDelta >= 0 ? '+₹' + rowDelta.toLocaleString('en-IN') : '-₹' + Math.abs(rowDelta).toLocaleString('en-IN')}
+          </td>
+          <td><button class="btn-delete" onclick="dropBudgetLine(${idx})">Drop</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const globalDelta = sumEst - sumAct;
+      document.getElementById('total-est').innerText = `₹${sumEst.toLocaleString('en-IN')}`;
+      document.getElementById('total-act').innerText = `₹${sumAct.toLocaleString('en-IN')}`;
+      
+      const totalDiffEl = document.getElementById('total-diff');
+      totalDiffEl.innerText = globalDelta >= 0 ? `+₹${globalDelta.toLocaleString('en-IN')}` : `-₹${Math.abs(globalDelta).toLocaleString('en-IN')}`;
+      totalDiffEl.style.color = globalDelta >= 0 ? 'var(--color-green)' : 'var(--color-red)';
+    }
+
+    function addBudgetLine(e) {
+      e.preventDefault();
+      const catEl = document.getElementById('b-category');
+      const estEl = document.getElementById('b-est');
+      const actEl = document.getElementById('b-act');
+
+      budgetEntries.push({
+        category: catEl.value,
+        est: parseFloat(estEl.value) || 0,
+        act: parseFloat(actEl.value) || 0
+      });
+
+      catEl.value = ''; estEl.value = ''; actEl.value = '';
+      updateBudgetDisplay();
+    }
+
+    function dropBudgetLine(index) {
+      budgetEntries.splice(index, 1);
+      updateBudgetDisplay();
+    }
+
+    function escapeHtml(text) {
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // --- ACCORDION ELEMENT ACTIONS ---
+    function toggleAccordion(triggerElement) {
+      const currentItem = triggerElement.parentElement;
+      const content = currentItem.querySelector('.accordion-content');
+      const isOpen = currentItem.classList.contains('open');
+
+      // Close open elements
+      document.querySelectorAll('.accordion-item').forEach(item => {
+        item.classList.remove('open');
+        item.querySelector('.accordion-content').style.maxHeight = null;
+      });
+
+      if (!isOpen) {
+        currentItem.classList.add('open');
+        content.style.maxHeight = content.scrollHeight + "px";
+      }
+    }
+
+    // --- FUNDRAISER SCROLL REVEAL TRIGGERS ---
+    function triggerFundraiserAnimation() {
+      const progressFill = document.getElementById('fund-progress');
+      if(progressFill) progressFill.style.width = '47.5%';
+    }
+
+    // --- SCROLL INTERACTION ANIMATIONS ---
+    function triggerScrollReveal() {
+      const trackingBlocks = document.querySelectorAll('.scroll-reveal');
+      trackingBlocks.forEach(block => {
+        const bounding = block.getBoundingClientRect();
+        if (bounding.top < window.innerHeight * 0.92) {
+          block.classList.add('visible');
+          // Handle progress bars if scrolled directly into visibility parameters
+          if(block.querySelector('#fund-progress')) {
+            triggerFundraiserAnimation();
+          }
+        }
+      });
+    }
+    window.addEventListener('scroll', triggerScrollReveal);
+
+    // --- PAGE REVEAL ANIMATION STAGGER SEQUENCES ---
+    window.addEventListener('DOMContentLoaded', () => {
+      // Direct baseline processing
+      processCalculations();
+      updateBudgetDisplay();
+
+      // Execute orchestrated layout reveals
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const headline = document.getElementById('hero-headline');
+        const subtext = document.getElementById('hero-subtext');
+        const actions = document.getElementById('hero-actions');
+        const stamp = document.getElementById('hero-stamp');
+
+        // Apply clean programmatic delay ticks
+        setTimeout(() => {
+          headline.style.transition = 'transform 0.6s var(--ease-out), opacity 0.6s var(--ease-out)';
+          headline.style.opacity = '1'; headline.style.transform = 'translateY(0)';
+        }, 100);
+
+        setTimeout(() => {
+          subtext.style.transition = 'transform 0.6s var(--ease-out), opacity 0.6s var(--ease-out)';
+          subtext.style.opacity = '1'; subtext.style.transform = 'translateY(0)';
+        }, 250);
+
+        setTimeout(() => {
+          actions.style.transition = 'transform 0.6s var(--ease-out), opacity 0.6s var(--ease-out)';
+          actions.style.opacity = '1'; actions.style.transform = 'translateY(0)';
+        }, 400);
+
+        setTimeout(() => {
+          stamp.classList.add('animate-trigger');
+        }, 600);
+      } else {
+        // Fallback execution rules for motion prevention layers
+        document.getElementById('hero-headline').style.opacity = '1';
+        document.getElementById('hero-headline').style.transform = 'none';
+        document.getElementById('hero-subtext').style.opacity = '1';
+        document.getElementById('hero-subtext').style.transform = 'none';
+        document.getElementById('hero-actions').style.opacity = '1';
+        document.getElementById('hero-actions').style.transform = 'none';
+        document.getElementById('hero-stamp').classList.add('animate-trigger');
+      }
+
+      // Initial scanning execution check
+      setTimeout(triggerScrollReveal, 200);
+    });
+  </script>
+</body>
+</html>
